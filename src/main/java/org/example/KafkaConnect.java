@@ -7,9 +7,12 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.lifecycle.Startables;
 import org.testcontainers.utility.DockerImageName;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.stream.Stream;
 
@@ -24,12 +27,16 @@ public class KafkaConnect {
                     .withNetworkAliases(KAFKA_HOSTNAME)
                     .withNetwork(NETWORK);
 
-    private static final DebeziumContainer DEBEZIUM_CONTAINER = new DebeziumContainer("quay.io/debezium/connect:nightly")
+    private static final Path dockerFile = Paths.get("src", "main", "docker").toFile().getAbsoluteFile().toPath();
+
+    private static final DebeziumContainer DEBEZIUM_CONTAINER = new DebeziumContainer(new ImageFromDockerfile().withFileFromPath(".", dockerFile))
                 .withNetwork(NETWORK)
                 .withKafka(KAFKA_CONTAINER.getNetwork(), KAFKA_HOSTNAME + ":9092")
                 .withLogConsumer(new Slf4jLogConsumer(LOGGER))
                 .dependsOn(KAFKA_CONTAINER)
-                .withStartupTimeout(Duration.ofSeconds(120));
+                .withStartupTimeout(Duration.ofSeconds(120))
+                .withEnv("KAFKA_OPTS", "-javaagent:/tmp/jolokia/jolokia-jvm-1.7.2.jar=port=8778,host=*")
+                .withExposedPorts(8083, 8778);
 
     public static Integer getDebeziumPort() {
         return DEBEZIUM_CONTAINER.getFirstMappedPort();
@@ -37,6 +44,10 @@ public class KafkaConnect {
 
     public static String getDebeziumHost() {
         return DEBEZIUM_CONTAINER.getContainerInfo().getConfig().getHostName();
+    }
+
+    public static Integer getJolokiaPort() {
+        return DEBEZIUM_CONTAINER.getMappedPort(8778);
     }
 
     public static void startContainers() {

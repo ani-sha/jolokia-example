@@ -14,7 +14,7 @@ public class JolokiaClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
     public static J4pClient createJolokiaClient() {
-        Integer kafkaConnectPort = KafkaConnect.getDebeziumPort();
+        Integer kafkaConnectPort = KafkaConnect.getJolokiaPort();
         String jolokiaUrl = String.format("http://localhost:%d/jolokia/", kafkaConnectPort);
         LOGGER.info("Jolokia client available at " + jolokiaUrl);
         return J4pClient.url(jolokiaUrl)
