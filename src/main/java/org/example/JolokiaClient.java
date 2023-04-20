@@ -11,12 +11,9 @@ import org.slf4j.LoggerFactory;
 import javax.management.MalformedObjectNameException;
 
 public class JolokiaClient {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
-
     public static J4pClient createJolokiaClient() {
-        Integer kafkaConnectPort = KafkaConnect.getJolokiaPort();
+        Integer kafkaConnectPort = Infrastructure.getJolokiaPort();
         String jolokiaUrl = String.format("http://localhost:%d/jolokia/", kafkaConnectPort);
-        LOGGER.info("Jolokia client available at " + jolokiaUrl);
         return J4pClient.url(jolokiaUrl)
                 .authenticator(new BasicAuthenticator().preemptive())
                 .connectionTimeout(3000)
@@ -24,11 +21,9 @@ public class JolokiaClient {
                 .build();
     }
 
-    public static JSONObject getMetrics(String metricsName, String metricsType) throws MalformedObjectNameException, J4pException {
+    public static J4pReadResponse getMetrics(String metricsName, String metricsType) throws MalformedObjectNameException, J4pException {
         J4pClient j4p = createJolokiaClient();
-        LOGGER.info("Reading metrics " + metricsName + " from " + metricsType);
-        J4pReadRequest request = new J4pReadRequest("java.lang:type=" + metricsType, metricsName);
-        J4pReadResponse response = j4p.execute(request);
-        return response.asJSONObject();
+        J4pReadRequest request = new J4pReadRequest(metricsName, metricsType);
+        return j4p.execute(request);
     }
 }
